@@ -1,8 +1,12 @@
-﻿using System;
+﻿using MediatR;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using VacationRental.Domain.AggregatesModel;
 
-namespace VacationRental.Api.Models
+namespace VacationRental.Application.Commands
 {
-    public class BookingBindingModel
+    public class BookingBindingModel : IRequest<Booking>
     {
         public int RentalId { get; set; }
 

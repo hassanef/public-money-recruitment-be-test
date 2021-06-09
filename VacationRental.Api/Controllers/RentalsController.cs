@@ -1,7 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using VacationRental.Api.Models;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using VacationRental.Application.Commands;
+using VacationRental.Application.ViewModels;
+using VacationRental.Domain.AggregatesModel;
+using VacationRental.Domain.Exceptions;
 
 namespace VacationRental.Api.Controllers
 {
@@ -9,33 +14,50 @@ namespace VacationRental.Api.Controllers
     [ApiController]
     public class RentalsController : ControllerBase
     {
-        private readonly IDictionary<int, RentalViewModel> _rentals;
+        private readonly IDictionary<int, Rental> _rentals;
+        private readonly IMediator _mediator;
 
-        public RentalsController(IDictionary<int, RentalViewModel> rentals)
+        public RentalsController(IDictionary<int, Rental> rentals, IMediator mediator)
         {
             _rentals = rentals;
+            _mediator = mediator;
         }
 
         [HttpGet]
         [Route("{rentalId:int}")]
         public RentalViewModel Get(int rentalId)
         {
-            if (!_rentals.ContainsKey(rentalId))
-                throw new ApplicationException("Rental not found");
+            if (rentalId <= 0)
+                throw new VacationRentalException("rentalId must be positive");
 
-            return _rentals[rentalId];
+            if (!_rentals.ContainsKey(rentalId))
+                throw new VacationRentalException("Rental not found");
+
+            var rental = _rentals.Where(x => x.Value.Id == rentalId)
+                                 .Select(x => new RentalViewModel()
+                                 {
+                                     PreparationTimeInDays = x.Value.PreparationTimeInDays,
+                                     Units = x.Value.Units
+                                 }).SingleOrDefault();
+
+            return rental;
         }
 
         [HttpPost]
-        public ResourceIdViewModel Post(RentalBindingModel model)
+        public async Task<ResourceIdViewModel> Post(RentalBindingModel model)
         {
-            var key = new ResourceIdViewModel { Id = _rentals.Keys.Count + 1 };
+            var result = await _mediator.Send(model);
 
-            _rentals.Add(key.Id, new RentalViewModel
-            {
-                Id = key.Id,
-                Units = model.Units
-            });
+            var key = new ResourceIdViewModel { Id = result.Id };
+
+            return key;
+        }
+        [HttpPut]
+        public async Task<ResourceIdViewModel> Put(UpdateRentalBindingModel model)
+        {
+            var result = await _mediator.Send(model);
+
+            var key = new ResourceIdViewModel { Id = result.Id };
 
             return key;
         }

@@ -2,7 +2,9 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using VacationRental.Api.Models;
+using VacationRental.Application.Commands;
+using VacationRental.Application.ViewModels;
+using VacationRental.Domain.AggregatesModel;
 using Xunit;
 
 namespace VacationRental.Api.Tests
@@ -22,7 +24,8 @@ namespace VacationRental.Api.Tests
         {
             var request = new RentalBindingModel
             {
-                Units = 25
+                Units = 25,
+                PreparationTimeInDays = 1
             };
 
             ResourceIdViewModel postResult;

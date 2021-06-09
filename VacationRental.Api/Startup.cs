@@ -1,11 +1,16 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Swagger;
-using VacationRental.Api.Models;
+using VacationRental.Application.Infrastructure.AutofacModules;
+using VacationRental.Application.Queries;
+using VacationRental.Domain.AggregatesModel;
 
 namespace VacationRental.Api
 {
@@ -19,14 +24,23 @@ namespace VacationRental.Api
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
+        public virtual IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
             services.AddSwaggerGen(opts => opts.SwaggerDoc("v1", new Info { Title = "Vacation rental information", Version = "v1" }));
 
-            services.AddSingleton<IDictionary<int, RentalViewModel>>(new Dictionary<int, RentalViewModel>());
-            services.AddSingleton<IDictionary<int, BookingViewModel>>(new Dictionary<int, BookingViewModel>());
+            services.AddSingleton<IDictionary<int, Rental>>(new Dictionary<int, Rental>());
+            services.AddSingleton<IDictionary<int, Booking>>(new Dictionary<int, Booking>());
+
+            services.AddScoped<ICalendarQuery, CalendarQuery>();
+
+            var container = new ContainerBuilder();
+            container.Populate(services);
+
+            container.RegisterModule(new MediatorModule());
+
+            return new AutofacServiceProvider(container.Build());
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
